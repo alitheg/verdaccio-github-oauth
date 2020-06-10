@@ -144,7 +144,7 @@ function middlewares(config, stuff, app, auth, storage) {
               return next(Error[resp.statusCode]('unexpected response from google: "' + data + '"'));
             }
 
-            var user = JSON.parse(data).login;
+            var user = JSON.parse(data).email;
             if (user === undefined) {
               return next(Error[502]('error getting user from google: ' + data))
             }
