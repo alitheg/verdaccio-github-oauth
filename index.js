@@ -4,10 +4,6 @@ var Crypto = require('crypto');
 
 var cache = {};
 
-var CACHE_KEY = {
-  API_URL: 'API_URL'
-};
-
 function aes_encrypt(buf, secret) {
   var c = Crypto.createCipher('aes192', secret);
   var b1 = c.update(buf);
@@ -17,8 +13,6 @@ function aes_encrypt(buf, secret) {
 
 function authenticate(config, stuff, user, accessToken, cb) {
   var cacheTTLms = config['cache-ttl-ms'] || 1000 * 30;
-  var apiUrl = cache[CACHE_KEY.API_URL] || 'api.github.com';
-  var apiPath = cache[apiUrl] ? '/api/v3/user/orgs' : '/user/orgs';
 
   if (cache[user] && cache[user].token === accessToken) {
     if (cache[user].expires > Date.now()) {
@@ -29,9 +23,9 @@ function authenticate(config, stuff, user, accessToken, cb) {
   }
 
   var opts = {
-    host: apiUrl,
+    host: 'openidconnect.googleapis.com',
     port: 443,
-    path: apiPath,
+    path: '/v1/userinfo',
     method: 'GET',
     headers: {
       'Accept': 'application/json',
@@ -55,7 +49,7 @@ function authenticate(config, stuff, user, accessToken, cb) {
       var data = Buffer.concat(body).toString();
 
       if (resp.statusCode !== 200) {
-        return cb(Error[resp.statusCode]('unexpected response from github: "' + data + '"'));
+        return cb(Error[resp.statusCode]('unexpected response from google: "' + data + '"'));
       }
 
       var orgs = JSON.parse(data).map(function(org) {
@@ -68,7 +62,6 @@ function authenticate(config, stuff, user, accessToken, cb) {
 
       cache[user] = {
           token: accessToken,
-          orgs: orgs,
           expires: Date.now() + cacheTTLms
       }
       return cb(null, orgs);
@@ -80,10 +73,6 @@ function middlewares(config, stuff, app, auth, storage) {
   var clientId = config['client-id'];
   var redirectHost = config['redirect-url-base'];
   var clientSecret = config['client-secret'];
-  var gitHostname = config['git-hostname'] || 'github.com';
-  var apiUrl = config['git-hostname'] ? config['git-hostname'] : 'api.github.com';
-  var apiPath = config['git-hostname'] ? '/api/v3/user' : '/user';
-  cache[CACHE_KEY.API_URL] = apiUrl;
   if (clientId === undefined || clientSecret === undefined) {
     throw Error('server needs to be configured with github client id and secret')
   }
