@@ -95,7 +95,7 @@ function middlewares(config, stuff, app, auth, storage) {
     var opts = {
       host: 'oauth2.googleapis.com',
       port: 443,
-      path: 'token',
+      path: '/token',
       method: 'POST',
       headers: {
         'User-Agent': stuff.config.user_agent,
