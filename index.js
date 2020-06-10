@@ -150,7 +150,8 @@ function middlewares(config, stuff, app, auth, storage) {
             }
 
             var token = aes_encrypt(user + ':' + accessToken, auth.secret).toString('base64');
-            res.redirect('http://localhost:8239?token=' + encodeURIComponent(token));
+            res.header('Authorization', token)
+            res.redirect(`${redirectHost}`);
           });
         }).end();
       });
