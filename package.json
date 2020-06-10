@@ -1,14 +1,14 @@
 {
-  "name": "verdaccio-github-oauth",
+  "name": "verdaccio-google-oauth2",
   "version": "1.1.0",
-  "description": "authentication plugin for verdaccio, supporting github oauth web flow",
+  "description": "authentication plugin for verdaccio, supporting google oauth2 web flow",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/aroundus-inc/verdaccio-github-oauth.git"
+    "url": "https://github.com/alitheg/verdaccio-github-oauth.git"
   },
   "license": "MIT",
   "dependencies": {

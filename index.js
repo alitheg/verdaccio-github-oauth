@@ -78,6 +78,7 @@ function authenticate(config, stuff, user, accessToken, cb) {
 
 function middlewares(config, stuff, app, auth, storage) {
   var clientId = config['client-id'];
+  var redirectHost = config['redirect-url-base'];
   var clientSecret = config['client-secret'];
   var gitHostname = config['git-hostname'] || 'github.com';
   var apiUrl = config['git-hostname'] ? config['git-hostname'] : 'api.github.com';
@@ -88,7 +89,7 @@ function middlewares(config, stuff, app, auth, storage) {
   }
 
   app.use('/oauth/authorize', function(req, res) {
-    res.redirect('https://' + gitHostname + '/login/oauth/authorize?client_id=' + clientId + '&scope=read:org')
+    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&redirect_uri=${redirectHost}/oauth/callback&scope=openid%20email%20profile&response_type=code`)
   });
 
   app.use('/oauth/callback', function(req, res, next) {
@@ -97,13 +98,15 @@ function middlewares(config, stuff, app, auth, storage) {
     var data = JSON.stringify({
       'code': code,
       'client_id': clientId,
-      'client_secret': clientSecret
+      'client_secret': clientSecret,
+      'grant_type': 'authorization_code',
+      'redirect_uri': `${redirectHost}/oauth/callback`
     });
 
     var opts = {
-      host: gitHostname,
+      host: 'oauth2.googleapis.com',
       port: 443,
-      path: '/login/oauth/access_token',
+      path: 'token',
       method: 'POST',
       headers: {
         'User-Agent': stuff.config.user_agent,
@@ -125,14 +128,14 @@ function middlewares(config, stuff, app, auth, storage) {
         var data = Buffer.concat(body).toString();
 
         if (resp.statusCode !== 200) {
-          return next(Error[resp.statusCode]('unexpected response from github: "' + data + '"'));
+          return next(Error[resp.statusCode]('unexpected response from google: "' + data + '"'));
         }
 
         var accessToken = JSON.parse(data).access_token;
         var opts = {
-          host: apiUrl,
+          host: 'openidconnect.googleapis.com',
           port: 443,
-          path: apiPath,
+          path: '/v1/userinfo',
           method: 'GET',
           headers: {
             'Accept': 'application/json',
@@ -149,12 +152,12 @@ function middlewares(config, stuff, app, auth, storage) {
             var data = Buffer.concat(body).toString();
 
             if (resp.statusCode !== 200) {
-              return next(Error[resp.statusCode]('unexpected response from github: "' + data + '"'));
+              return next(Error[resp.statusCode]('unexpected response from google: "' + data + '"'));
             }
 
             var user = JSON.parse(data).login;
             if (user === undefined) {
-              return next(Error[502]('error getting user from github: ' + data))
+              return next(Error[502]('error getting user from google: ' + data))
             }
 
             var token = aes_encrypt(user + ':' + accessToken, auth.secret).toString('base64');
@@ -175,4 +178,3 @@ module.exports = function(config, stuff) {
     register_middlewares: middlewares.bind(undefined, config, stuff)
   }
 };
-
